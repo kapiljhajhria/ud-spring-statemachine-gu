@@ -26,16 +26,19 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public StateMachine<PaymentState, PaymentEvent> preAuth(Long paymentId) {
+        StateMachine<PaymentState, PaymentEvent> stateMachine = build(paymentId);
         return null;
     }
 
     @Override
     public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
+        StateMachine<PaymentState, PaymentEvent> stateMachine = build(paymentId);
         return null;
     }
 
     @Override
     public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
+        StateMachine<PaymentState, PaymentEvent> stateMachine = build(paymentId);
         return null;
     }
 
