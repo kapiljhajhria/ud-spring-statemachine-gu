@@ -15,8 +15,9 @@ import java.math.BigDecimal;
 @Entity
 public class Payment {
 
-    @Id
+    @Id()
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Enumerated(EnumType.STRING)
