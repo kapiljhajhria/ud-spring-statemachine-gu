@@ -2,8 +2,11 @@ package com.jhajhria.statemachine.config;
 
 import com.jhajhria.statemachine.domain.PaymentEvent;
 import com.jhajhria.statemachine.domain.PaymentState;
+import com.jhajhria.statemachine.services.PaymentServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
@@ -13,6 +16,7 @@ import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
 import java.util.EnumSet;
+import java.util.Random;
 
 @Slf4j
 @Configuration
@@ -37,7 +41,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
 //        super.configure(transitions);
 
         //PS.NEW -> PE.PRE_AUTHORIZE -> PS.NEW  //PRE_AUTHORIZE event won't change the state, we will still be in new state, the output of this event will change the state
-        transitions.withExternal().source(PaymentState.NEW).target(PaymentState.NEW).event(PaymentEvent.PRE_AUTHORIZE)
+        transitions.withExternal().source(PaymentState.NEW).target(PaymentState.NEW).event(PaymentEvent.PRE_AUTHORIZE).action(preAuthAction())
                 .and().withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH).event(PaymentEvent.PRE_AUTH_APPROVED)
                 .and().withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH_ERROR).event(PaymentEvent.PRE_AUTH_DECLINED);
 
@@ -56,6 +60,29 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
         };
 
         config.withConfiguration().listener(adapter);
+    }
+
+
+    public Action<PaymentState, PaymentEvent> preAuthAction() {
+        return context -> {
+            log.info("Pre-authorizing the payment");
+
+            if(new Random().nextInt(10)<=8){
+                log.info("Pre-authorization successful");
+//                context.getExtendedState().getVariables().put("preAuth", true);
+                context.getStateMachine().sendEvent((MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_APPROVED)
+                        .setHeader(PaymentServiceImpl.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER))
+                        .build()));
+            }else {
+                log.info("Pre-authorization failed");
+//                context.getExtendedState().getVariables().put("preAuth", false);
+                context.getStateMachine().sendEvent((MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_DECLINED)
+                        .setHeader(PaymentServiceImpl.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER))
+                        .build()));
+            }
+
+
+        };
     }
 
 }
