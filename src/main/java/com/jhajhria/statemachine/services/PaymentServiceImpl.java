@@ -36,7 +36,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public StateMachine<PaymentState, PaymentEvent> preAuth(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> stateMachine = build(paymentId);
-        sendEvent(paymentId,stateMachine,PaymentEvent.PRE_AUTHORIZE);
+        sendEvent(paymentId,stateMachine,PaymentEvent.PRE_AUTHORIZE);//TODO: check this
         return stateMachine;
     }
 
@@ -44,10 +44,11 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> stateMachine = build(paymentId);
-        sendEvent(paymentId,stateMachine,PaymentEvent.AUTH_APPROVED);
+        sendEvent(paymentId,stateMachine,PaymentEvent.AUTHORIZE);
         return stateMachine;
     }
 
+    @Deprecated//using actions to progress the state machine
     @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
@@ -60,6 +61,9 @@ public class PaymentServiceImpl implements PaymentService {
             Message msg = MessageBuilder.withPayload(event)
                              .setHeader(PAYMENT_ID_HEADER, paymentId)
                                                  .build();
+        //Here we initial the state with certain tasks like  starting payment authorization process. in actions, we update state based on the response we get from API.
+        // Ex if payment gets declines due to insufficient funds, actions will automatically update the state to DECLINE.
+        // another way to look at this is that here we send the event and in actions it happens automatically (based on response or some other logic)
 
             sm.sendEvent(msg);
 
