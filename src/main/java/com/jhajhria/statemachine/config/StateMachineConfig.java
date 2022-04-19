@@ -12,6 +12,7 @@ import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
+import org.springframework.statemachine.guard.Guard;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
@@ -41,7 +42,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
 //        super.configure(transitions);
 
         //PS.NEW -> PE.PRE_AUTHORIZE -> PS.NEW  //PRE_AUTHORIZE event won't change the state, we will still be in new state, the output of this event will change the state
-        transitions.withExternal().source(PaymentState.NEW).target(PaymentState.NEW).event(PaymentEvent.PRE_AUTHORIZE).action(preAuthAction())
+        transitions.withExternal().source(PaymentState.NEW).target(PaymentState.NEW).event(PaymentEvent.PRE_AUTHORIZE).action(preAuthAction()).guard(paymentIdGuard())
                 .and().withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH).event(PaymentEvent.PRE_AUTH_APPROVED)
                 .and().withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH_ERROR).event(PaymentEvent.PRE_AUTH_DECLINED)
         //pre-auth to auth
@@ -65,6 +66,21 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
         };
 
         config.withConfiguration().listener(adapter);
+    }
+
+
+//- Guards help us ad an ability to state machine to prove an action
+//- Ex in PaymentStateChangeInterceptor.preStateChange default id value has been se as -1L. If that ID is not found
+//- Guards can enforce the ID requirement and if ID is null then actions will be disabled
+//- Define paymentIdGuard
+//- use paymentIdGuard in config
+//- you can also chain multiple guards if required.
+//- run repeated test to check if everything is still working
+//- guard implemented for only one state change but you can do this for multiple state change as well.
+    public Guard<PaymentState,PaymentEvent> paymentIdGuard(){
+        return context -> {
+            return context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER) != null;
+        };
     }
 
 
